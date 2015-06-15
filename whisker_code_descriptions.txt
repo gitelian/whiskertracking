@@ -1,0 +1,47 @@
+
+-----
+% SEQ2REFLECTIVE_MEASURES Function that converts high speed video of whiskers
+% to 2d histogram.
+% Extract angle information from a single reflective whisker.
+% IT IS VERY IMPORTANT THAT ONLY ONE WHISKER IS REFLECTIVE AND THAT THE
+% REFLECTIVE PORTION IS LINEAR!
+%
+% Input: path to seq high speed movie file
+%
+% Output
+% angles: vector of whisker angles for each frame.
+% mean_counts: 2d histogram (probability) values for movie.
+% lines: cell array that contains line objects for each frame computed using
+% a Hough transform.
+% img: 3d matrix of image values. ij correspond to pixels and the third
+% dimension corresponds to frames.
+
+-----
+% track_reflective_whisker takes no arguments. It prompts the user to select a
+% high speed video directory to analyze and to enter in some details about the
+% experiment such as when the video began recording, when it stopped, when
+% the object started moving (i.e. stim period began), and the frame rate of
+% the camera. The processed data will be saved in the directory:
+% 'E:\TrackingData\ProcessedMeasurements\' and will contain cell arrays
+% with angle, curvature, phase, and other information for each trial. All
+% vectors contained in the cell are the same lenghth and can be easily
+% indexed during analysis.
+%
+% G. Telian
+% Adesnik Lab
+% UC Berkeley
+% 20140611
+%
+% 20140625 update (GT): changed setpoint code to get a more accurate measure of
+% setpoint.
+%
+% 20150514 update (GT): changed filter settings to get a more accurate
+% measurement of phase. Also, adapted code to process videos of a single
+% reflective whisker (painted with reflected paint).
+
+-----
+% whiskers2histogram
+% Convert high speed videos of whiskers to 2d histograms.
+% The histograms can be used later to extract overall setpoint and amplitude.
+%
+% Scratch script for testing.
