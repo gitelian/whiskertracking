@@ -76,6 +76,17 @@ t = 0:size(img, 3) - 1;
 figure;
 plot(t, angles);
 ylim([90 180])
+
+% Code that attempts to find the sector boundaries of a 2d histogram whisker
+% trace. Play around with this IF automated computing of sector boundaries is
+% important (i.e. if we want to calculate the mean set-point across all trials.
+% Maybe there is an easier way: draw a small rectangular roi (or line) and
+% calculate the region boundary using three points. The first point is the max
+% protraction point, second point is the min protraction point, and the third
+% point is a user define point placed on base of the whisker follicle. Using
+% these three points I can calculate the sector angle (amplitude), and
+% set-point.
+%
 %BW1 = im2bw(mean_counts, 1/6*(threshold/255));
 %BW = imfill(BW1, 'holes');
 %figure;imagesc(BW);colormap gray

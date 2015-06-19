@@ -21,6 +21,6 @@ for k = 1:length(angleCell)
     plot(bad_frames, 'm')
     hold off
     ylim([90 180])
-    saveas(h, ['~/Documents/AdesnikLab/Figures/HSV_Reflective/' fid '_Trial' sprintf('%02d',k) '.pdf'])
+    %saveas(h, ['~/Documents/AdesnikLab/Figures/HSV_Reflective/' fid '_Trial' sprintf('%02d',k) '.pdf'])
     close(h)
 end
