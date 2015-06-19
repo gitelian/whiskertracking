@@ -34,6 +34,7 @@ end
 
 mean_counts = counts/size(img,3);
 
+% this is a test
 
 % Use Hough transform to get whisker trace
 angles = nan(size(img,3),1);
