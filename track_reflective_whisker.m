@@ -83,7 +83,6 @@ camTime       = startTime:timeStep:(stopTime-timeStep);
 
 stimFrame     = floor((1.5-startTime)/timeStep);
 
-h = waitbar(0, 'Tracking Progress...');
 
 for trialNum = 1:numMovies
 
@@ -96,7 +95,21 @@ for trialNum = 1:numMovies
     setPointMat        = nan(numFrames,1);
     ampMat             = nan(numFrames,1);
 
-    [angleMat, img2dhist, ~, ~] = seq2reflective_measures([vidDir filesep fName]);
+    if trialNum == 1
+        [~, imgOut] = Norpix2MATLABopenSingleFrame([vidDir filesep fName],1);
+        h1 = figure;
+        imshow(imgOut);
+        roi = roipoly;
+        close(h1);
+        h1 = figure;
+        imshow(imgOut);
+        follicle = ginput(1);
+        close all;
+        h = waitbar(0, 'Tracking Progress...');
+    end
+
+    [angleMat, img2dhist, ~] = seq2reflective_measures([vidDir filesep fName],...
+        roi, follicle);
 
     upper_thresh = nanmean(angleMat) + 3*nanstd(angleMat);
     lower_thresh = nanmean(angleMat) - 3*nanstd(angleMat);
@@ -118,73 +131,87 @@ for trialNum = 1:numMovies
     end
     censor_mat = unique(censor_mat);
     censor_mat(censor_mat <= 0) = [];
-    censor_mat(censor_mat > num_frames) = [];
+    censor_mat(censor_mat > numFrames) = [];
 
-    % Interpolate angle trace and remove discontinuities
-    angleMatInterp(:,1) = smooth(naninterp(angleMat(:,1),'pchip'),3);
+    if length(bad_inds) < 0.5*length(angleMat)
 
-    angleMatInterp(angleMatInterp(:,1)<= 70,1) = 90; %removes discontinuities
-    angleMatInterp(angleMatInterp(:,1)>=200,1) = 180;
+        % Interpolate angle trace and remove discontinuities
+        angleMatInterp(:,1) = smooth(naninterp(angleMat(:,1),'pchip'),3);
 
-    % Calculate the phase of the signal between 15 and 25Hz
-    % THE OG dataFilt = genButterFilter(angleMatInterp(:,1),4,100,4,'butter_acausal',500);
-    dataFilt = genButterFilter(angleMatInterp(:,1),15,25,4,'butter_acausal',500);
-    yh = hilbert(dataFilt);
-    phaseMat(:,1) = angle(yh);
-    angleMatInterpFilt(:,1) = dataFilt;
+        angleMatInterp(angleMatInterp(:,1)<= 70,1) = 90; %removes discontinuities
+        angleMatInterp(angleMatInterp(:,1)>=200,1) = 180;
 
-    % Calculate set point
-    % get the set point by low pass filtering angle trace, finding peaks
-    % and troughs, getting midpoint between them, and smoothing points with
-    % a 50 point sliding window
-    dataFilt = genButterFilter(angleMatInterp(:,1),5,20,4,'butter_acausal',500);
-    [~,pkLoc] = findpeaks(dataFilt,'MinPeakHeight',0,'MinPeakDistance',5);
-    [~,trLoc] = findpeaks(-dataFilt,'MinPeakDistance',5);
+        % Calculate the phase of the signal between 15 and 25Hz
+        % THE OG dataFilt = genButterFilter(angleMatInterp(:,1),4,100,4,'butter_acausal',500);
+        dataFilt = genButterFilter(angleMatInterp(:,1),15,25,4,'butter_acausal',500);
+        yh = hilbert(dataFilt);
+        phaseMat(:,1) = angle(yh);
+        angleMatInterpFilt(:,1) = dataFilt;
 
-    temp = nan(numFrames,2);
-    temp(pkLoc,1)     = angleMatInterp(pkLoc,1);
-    temp(trLoc,2)     = angleMatInterp(trLoc,1);
-    temp(1,1)         = angleMatInterp(1,1);
-    temp(1,2)         = angleMatInterp(1,1);
-    temp(numFrames,1) = angleMatInterp(numFrames,1);
-    temp(numFrames,2) = angleMatInterp(numFrames,1);
-    temp(:,1)         = naninterp(temp(:,1),'spline');
-    temp(:,2)         = naninterp(temp(:,2),'spline');
-    mid               = nan(numFrames,1);
-    mid(:,1)          = smooth(mean(temp,2),50);
+        % Calculate set point
+        % get the set point by low pass filtering angle trace, finding peaks
+        % and troughs, getting midpoint between them, and smoothing points with
+        % a 50 point sliding window
+        dataFilt = genButterFilter(angleMatInterp(:,1),5,20,4,'butter_acausal',500);
+        [~,pkLoc] = findpeaks(dataFilt,'MinPeakHeight',0,'MinPeakDistance',5);
+        [~,trLoc] = findpeaks(-dataFilt,'MinPeakDistance',5);
 
-    % Calculate the amplitude of the whisking envelope
-    dataFilt = genButterFilter(angleMatInterp(:,1),5,50,4,'butter_acausal',500);
-    [~,pkLoc] = findpeaks(dataFilt,'MinPeakHeight',0,'MinPeakDistance',5);
-    [~,trLoc] = findpeaks(-dataFilt,'MinPeakDistance',5);
-    amp = nan(numFrames,2);
-    amp(pkLoc,1)     = angleMatInterp(pkLoc,1);
-    amp(trLoc,2)     = angleMatInterp(trLoc,1);
-    amp(1,1)         = angleMatInterp(1,1);
-    amp(1,2)         = angleMatInterp(1,1);
-    amp(numFrames,1) = angleMatInterp(numFrames,1);
-    amp(numFrames,2) = angleMatInterp(numFrames,1);
-    amp(:,1)         = naninterp(amp(:,1),'spline');
-    amp(:,2)         = naninterp(amp(:,2),'spline');
+        temp = nan(numFrames,2);
+        temp(pkLoc,1)     = angleMatInterp(pkLoc,1);
+        temp(trLoc,2)     = angleMatInterp(trLoc,1);
+        temp(1,1)         = angleMatInterp(1,1);
+        temp(1,2)         = angleMatInterp(1,1);
+        temp(numFrames,1) = angleMatInterp(numFrames,1);
+        temp(numFrames,2) = angleMatInterp(numFrames,1);
+        temp(:,1)         = naninterp(temp(:,1),'spline');
+        temp(:,2)         = naninterp(temp(:,2),'spline');
+        mid               = nan(numFrames,1);
+        mid(:,1)          = smooth(mean(temp,2),50);
 
-%     figure;plot(camTime,mid(:,1),'k',camTime,angleMatInterp(:,1),'b');
-%     figure;plot(camTime,angleMatInterp(:,1),camTime,amp(:,1),camTime,amp(:,2),camTime,mid,'k')
-    setPointMat(:,1) = mid;
-    ampMat(:,1)      = (amp(:,1) - amp(:,2))/2;
+        % Calculate the amplitude of the whisking envelope
+        dataFilt = genButterFilter(angleMatInterp(:,1),5,50,4,'butter_acausal',500);
+        [~,pkLoc] = findpeaks(dataFilt,'MinPeakHeight',0,'MinPeakDistance',5);
+        [~,trLoc] = findpeaks(-dataFilt,'MinPeakDistance',5);
+        amp = nan(numFrames,2);
+        amp(pkLoc,1)     = angleMatInterp(pkLoc,1);
+        amp(trLoc,2)     = angleMatInterp(trLoc,1);
+        amp(1,1)         = angleMatInterp(1,1);
+        amp(1,2)         = angleMatInterp(1,1);
+        amp(numFrames,1) = angleMatInterp(numFrames,1);
+        amp(numFrames,2) = angleMatInterp(numFrames,1);
+        amp(:,1)         = naninterp(amp(:,1),'spline');
+        amp(:,2)         = naninterp(amp(:,2),'spline');
 
-    angleCell{trialNum,1}     = angleMatInterp;
-    badIndsCell{trialNum,1}   = bad_inds;
-    censorCell{trialNum,1}    = censor_mat;
-    imhistCell{trialNum,1}    = img2dhist;
-    phaseCell{trialNum,1}     = phaseMat;
-    angleZeroMean{trialNum,1} = angleMatInterpFilt;
-    setPointCell{trialNum,1}  = setPointMat;
-    ampCell{trialNum,1}       = ampMat;
+    %     figure;plot(camTime,mid(:,1),'k',camTime,angleMatInterp(:,1),'b');
+    %     figure;plot(camTime,angleMatInterp(:,1),camTime,amp(:,1),camTime,amp(:,2),camTime,mid,'k')
+        setPointMat(:,1) = mid;
+        ampMat(:,1)      = (amp(:,1) - amp(:,2))/2;
+
+        angleCell{trialNum,1}     = angleMatInterp;
+        badIndsCell{trialNum,1}   = bad_inds;
+        censorCell{trialNum,1}    = censor_mat;
+        imhistCell{trialNum,1}    = img2dhist;
+        phaseCell{trialNum,1}     = phaseMat;
+        angleZeroMean{trialNum,1} = angleMatInterpFilt;
+        setPointCell{trialNum,1}  = setPointMat;
+        ampCell{trialNum,1}       = ampMat;
+
+    else
+        goodTrials(trialNum, 1)   = 0;
+        angleCell{trialNum,1}     = angleMatInterp;
+        badIndsCell{trialNum,1}   = bad_inds;
+        censorCell{trialNum,1}    = censor_mat;
+        imhistCell{trialNum,1}    = img2dhist;
+        phaseCell{trialNum,1}     = phaseMat;
+        angleZeroMean{trialNum,1} = angleMatInterpFilt;
+        setPointCell{trialNum,1}  = setPointMat;
+        ampCell{trialNum,1}       = ampMat;
+    end
 
 
 %    disp([num2str(trialNum) '/' num2str(numMovies)])
-     fracComplet = trialNum/numMovies;
-     waitbar(fracComplet,h,sprintf('%d of %d complete',[trialNum numMovies]))
+fracComplet = trialNum/numMovies;
+waitbar(fracComplet,h,sprintf('%d of %d complete',[trialNum numMovies]))
 end
 
 close(h)
