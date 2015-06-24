@@ -1,4 +1,3 @@
-
 % track_reflective_whisker takes no arguments. It prompts the user to select a
 % high speed video directory to analyze and to enter in some details about the
 % experiment such as when the video began recording, when it stopped, when
