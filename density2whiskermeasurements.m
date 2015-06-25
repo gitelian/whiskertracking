@@ -29,8 +29,28 @@ for k = 1:num_stimuli
     colormap gray
     title({['Stimulus: ' num2str(k) ' ' 'Define the edges of the sector'],...
         '!!! The first point of an edge should be closest to the whisker pad !!!'})
+    hold on
 
-    [x, y] = ginput(4);
+    x = zeros(4,1);
+    y = zeros(4,1);
+    for k = 1:4
+        [xtemp, ytemp] = ginput(1);
+        x(k) = xtemp;
+        y(k) = ytemp;
+        if k == 1
+            plot(xtemp, ytemp, '-ro')
+        elseif k == 2
+            plot(x(1:2), y(1:2), '-ro')
+        elseif k == 3
+            plot(xtemp, ytemp, '-bo')
+        elseif k ==4
+            plot(x(3:4), y(3:4), '-bo')
+        end
+    end
+
+    pause(1.5)
+    hold off
+
     sector_coords{k} = [x, y];
     close all
     vec1 = [x(2) - x(1), -(y(2) - y(1))];
