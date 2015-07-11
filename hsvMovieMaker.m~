@@ -19,7 +19,7 @@ fid, 250, 25, 0.25, 2.0, 0);
 clear MCdata
 
 % Load whisker measurements
-fstruct = dir(['~/Documents/AdesnikLab/Processed_HSV/' fid '*.mat'])
+fstruct = dir(['~/Documents/AdesnikLab/Processed_HSV/*' fid '*.mat'])
 load(['~/Documents/AdesnikLab/Processed_HSV/' fstruct.name] , '-mat')
 
 timeStep  = round(1/fps*sr)/sr;

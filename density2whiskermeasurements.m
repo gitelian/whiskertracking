@@ -33,17 +33,17 @@ for k = 1:num_stimuli
 
     x = zeros(4,1);
     y = zeros(4,1);
-    for k = 1:4
+    for j = 1:4
         [xtemp, ytemp] = ginput(1);
-        x(k) = xtemp;
-        y(k) = ytemp;
-        if k == 1
+        x(j) = xtemp;
+        y(j) = ytemp;
+        if j == 1
             plot(xtemp, ytemp, '-ro')
-        elseif k == 2
+        elseif j == 2
             plot(x(1:2), y(1:2), '-ro')
-        elseif k == 3
+        elseif j == 3
             plot(xtemp, ytemp, '-bo')
-        elseif k ==4
+        elseif j ==4
             plot(x(3:4), y(3:4), '-bo')
         end
     end

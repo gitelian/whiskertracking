@@ -1,3 +1,4 @@
+
 % track_reflective_whisker takes no arguments. It prompts the user to select a
 % high speed video directory to analyze and to enter in some details about the
 % experiment such as when the video began recording, when it stopped, when
@@ -19,6 +20,13 @@
 % 20150514 update (GT): changed filter settings to get a more accurate
 % measurement of phase. Also, adapted code to process videos of a single
 % reflective whisker (painted with reflected paint).
+%
+% 20150613 update (GT): will only process videos where at most 50% of the
+% frames are nans or discontinuities. If more than 50% of the frames are
+% nans then no processing will occurr, the trial will be indicated as a
+% poor trial (goodTrial(ind) = 0) and all the angle, phase, etc cells will
+% be filled with nans to indicate a trial that should NOT be analyzed.
+
 
 function track_reflective_whisker()
 
@@ -47,8 +55,7 @@ numFrames = str2double(usrInput{6});
 timeStep  = round(1/fps*sr)/sr;
 
 % Have user specify the measure directory
-vidDir = uigetdir('~/Documents/Adesnik/');
-%vidDir = uigetdir('E:\TrackingData\Measure','Select the video directory to analyze');
+vidDir = uigetdir('E:\500hz-2000x760');
 
 %% REMOVE THIS %%
 %vidDir = '/media/greg/Data/HSV_Videos/FID0964'
@@ -78,9 +85,13 @@ phaseCell     = cell(numMovies,1);
 angleZeroMean = cell(numMovies,1);
 setPointCell  = cell(numMovies,1);
 ampCell       = cell(numMovies,1);
-wcoordCell    = cell(numMovies,1);
+goodTrials    = zeros(numMovies,1);
 baseFrame     = floor((objTime-startTime)/timeStep); %Frame number when object starts moving (i.e. end of baseline period)
 camTime       = startTime:timeStep:(stopTime-timeStep);
+
+stimFrame     = floor((1.5-startTime)/timeStep);
+
+h = waitbar(0, 'Tracking Progress...');
 
 for trialNum = 1:numMovies
 
@@ -93,31 +104,17 @@ for trialNum = 1:numMovies
     setPointMat        = nan(numFrames,1);
     ampMat             = nan(numFrames,1);
 
-    if trialNum == 1
-        [~, imgOut] = Norpix2MATLABopenSingleFrame([vidDir filesep fName],1);
-        dim = size(imgOut);
-        h1 = figure('position', [0, 0, dim(2), dim(1)]);
-        imagesc(imgOut);
-        roi = roipoly;
-        close(h1);
-        h1 = figure('position', [0, 0, dim(2), dim(1)]);
-        imagesc(imgOut);
-        follicle = ginput(1);
-        close all;
-        h = waitbar(0, 'Tracking Progress...');
-    end
-
-    [angleMat, img2dhist, wcoord] = seq2reflective_measures([vidDir filesep fName],...
-        roi, follicle);
-
+    [angleMat, img2dhist, ~, ~] = hough_seq2reflective_measures([vidDir filesep fName]);
+    
     upper_thresh = nanmean(angleMat) + 3*nanstd(angleMat);
     lower_thresh = nanmean(angleMat) - 3*nanstd(angleMat);
     angleMat(angleMat(:,1) <= lower_thresh,1) = nan; %removes discontinuities
     angleMat(angleMat(:,1) >= upper_thresh,1) = nan;
-
+    
     % Find bad indices and censory periods (i.e. regions not to be analyzed
     % because of poor or nonexistent data
     bad_inds = find(isnan(angleMat) == 1);
+    
     censor_mat = [];
     for k = 1:length(bad_inds)
         bad_i = bad_inds(k);
@@ -131,22 +128,22 @@ for trialNum = 1:numMovies
     censor_mat = unique(censor_mat);
     censor_mat(censor_mat <= 0) = [];
     censor_mat(censor_mat > numFrames) = [];
-
+    
     if length(bad_inds) < 0.5*length(angleMat)
-
+        
         % Interpolate angle trace and remove discontinuities
         angleMatInterp(:,1) = smooth(naninterp(angleMat(:,1),'pchip'),3);
-
+        
         angleMatInterp(angleMatInterp(:,1)<= 70,1) = 90; %removes discontinuities
         angleMatInterp(angleMatInterp(:,1)>=200,1) = 180;
-
+        
         % Calculate the phase of the signal between 15 and 25Hz
         % THE OG dataFilt = genButterFilter(angleMatInterp(:,1),4,100,4,'butter_acausal',500);
         dataFilt = genButterFilter(angleMatInterp(:,1),15,25,4,'butter_acausal',500);
         yh = hilbert(dataFilt);
         phaseMat(:,1) = angle(yh);
         angleMatInterpFilt(:,1) = dataFilt;
-
+        
         % Calculate set point
         % get the set point by low pass filtering angle trace, finding peaks
         % and troughs, getting midpoint between them, and smoothing points with
@@ -154,7 +151,7 @@ for trialNum = 1:numMovies
         dataFilt = genButterFilter(angleMatInterp(:,1),5,20,4,'butter_acausal',500);
         [~,pkLoc] = findpeaks(dataFilt,'MinPeakHeight',0,'MinPeakDistance',5);
         [~,trLoc] = findpeaks(-dataFilt,'MinPeakDistance',5);
-
+        
         temp = nan(numFrames,2);
         temp(pkLoc,1)     = angleMatInterp(pkLoc,1);
         temp(trLoc,2)     = angleMatInterp(trLoc,1);
@@ -166,7 +163,7 @@ for trialNum = 1:numMovies
         temp(:,2)         = naninterp(temp(:,2),'spline');
         mid               = nan(numFrames,1);
         mid(:,1)          = smooth(mean(temp,2),50);
-
+        
         % Calculate the amplitude of the whisking envelope
         dataFilt = genButterFilter(angleMatInterp(:,1),5,50,4,'butter_acausal',500);
         [~,pkLoc] = findpeaks(dataFilt,'MinPeakHeight',0,'MinPeakDistance',5);
@@ -180,12 +177,13 @@ for trialNum = 1:numMovies
         amp(numFrames,2) = angleMatInterp(numFrames,1);
         amp(:,1)         = naninterp(amp(:,1),'spline');
         amp(:,2)         = naninterp(amp(:,2),'spline');
-
-    %     figure;plot(camTime,mid(:,1),'k',camTime,angleMatInterp(:,1),'b');
-    %     figure;plot(camTime,angleMatInterp(:,1),camTime,amp(:,1),camTime,amp(:,2),camTime,mid,'k')
+        
+        %     figure;plot(camTime,mid(:,1),'k',camTime,angleMatInterp(:,1),'b');
+        %     figure;plot(camTime,angleMatInterp(:,1),camTime,amp(:,1),camTime,amp(:,2),camTime,mid,'k')
         setPointMat(:,1) = mid;
         ampMat(:,1)      = (amp(:,1) - amp(:,2))/2;
-
+        
+        goodTrials(trialNum, 1)   = 1;
         angleCell{trialNum,1}     = angleMatInterp;
         badIndsCell{trialNum,1}   = bad_inds;
         censorCell{trialNum,1}    = censor_mat;
@@ -194,8 +192,6 @@ for trialNum = 1:numMovies
         angleZeroMean{trialNum,1} = angleMatInterpFilt;
         setPointCell{trialNum,1}  = setPointMat;
         ampCell{trialNum,1}       = ampMat;
-        wcoordCell{trialNum,1}    = wcoord;
-
     else
         goodTrials(trialNum, 1)   = 0;
         angleCell{trialNum,1}     = angleMatInterp;
@@ -206,26 +202,24 @@ for trialNum = 1:numMovies
         angleZeroMean{trialNum,1} = angleMatInterpFilt;
         setPointCell{trialNum,1}  = setPointMat;
         ampCell{trialNum,1}       = ampMat;
-        wcoordCell{trialNum,1}    = ampMat;
     end
 
-
 %    disp([num2str(trialNum) '/' num2str(numMovies)])
-fracComplet = trialNum/numMovies;
-waitbar(fracComplet,h,sprintf('%d of %d complete',[trialNum numMovies]))
+     fracComplet = trialNum/numMovies;
+     waitbar(fracComplet,h,sprintf('%d of %d complete',[trialNum numMovies]))
 end
 
 close(h)
 
 %save(['E:\TrackingData\ProcessedMeasurements\'...
-%    comDir '-data-cells.mat'],'angleCell','badIndsCell','censorCell',...
+%    comDir '-data-cells.mat'],'goodTrials','angleCell','badIndsCell','censorCell',...
 %    'imhistCell','phaseCell', 'angleZeroMean','setPointCell','ampCell','numFrames',...
 %    'camTime','startTime','stopTime','fps','-v7.3')
 
 save(['~/Documents/AdesnikLab/Processed_HSV/'...
     comDir '-data-cells.mat'],'angleCell','badIndsCell','censorCell',...
     'imhistCell','phaseCell', 'angleZeroMean','setPointCell','ampCell','numFrames',...
-    'wcoordCell','camTime','startTime','stopTime','fps','-v7.3')
+    'camTime','startTime','stopTime','fps','-v7.3')
 
 toc()
 

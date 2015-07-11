@@ -1,7 +1,7 @@
 % inspect_traces loads in whisker tracking data and plots the angle, set point,
 % bad indicies, as well as the censor period that should not be analyzed.
 
-fid = 'FID0964'
+fid = 'FID1034'
 load(['~/Documents/AdesnikLab/Processed_HSV/' fid '-data-cells.mat'], '-mat')
 
 for k = 1:length(angleCell)
@@ -20,7 +20,7 @@ for k = 1:length(angleCell)
     plot(censor, 'g')
     plot(bad_frames, 'm')
     hold off
-    ylim([90 180])
-    %saveas(h, ['~/Documents/AdesnikLab/Figures/HSV_Reflective/' fid '_Trial' sprintf('%02d',k) '.pdf'])
+    ylim([50 180])
+    saveas(h, ['~/Documents/AdesnikLab/Figures/HSV_Reflective/' fid '_Trial' sprintf('%02d',k) '.pdf'])
     close(h)
 end
