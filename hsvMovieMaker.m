@@ -12,14 +12,14 @@ stopTime   = 2.5;
 sr         = 30000;
 
 % Load MCdata for running
-fstruct = dir(['~/Documents/AdesnikLab/HSV_Data/' fid '*.phy'])
-load(['~/Documents/AdesnikLab/HSV_Data/' fstruct.name], '-mat')
-[trialsran, trialswalk, runspeed, time] = classify_run_trials(MCdata, 30000,...
-fid, 250, 25, 0.25, 2.0, 0);
+fstruct = dir(['~/Documents/AdesnikLab/Data/' fid '*.dat'])
+load(['~/Documents/AdesnikLab/Data/' fstruct.name], '-mat')
+[trialsran, trialswalk, runspeed, time] = classify_run_trials(run_data, 30000,...
+250, 25, 0.25, 2.0, 0);
 clear MCdata
 
 % Load whisker measurements
-fstruct = dir(['~/Documents/AdesnikLab/Processed_HSV/' fid '*.mat'])
+fstruct = dir(['~/Documents/AdesnikLab/Processed_HSV/FID' fid '*.mat'])
 load(['~/Documents/AdesnikLab/Processed_HSV/' fstruct.name] , '-mat')
 
 timeStep  = round(1/fps*sr)/sr;

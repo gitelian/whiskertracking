@@ -30,7 +30,7 @@ h = figure('Position',[50 200 300 700]);
 
 angleYlims    = [80 180];
 phaseYlims    = [-pi pi];
-velocityYlims = [0 80];
+velocityYlims = [0 120];
 
 for frame = 1:numFrames
    midTime = tMov((frame+numOfNans));

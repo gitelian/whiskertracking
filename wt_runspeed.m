@@ -1,7 +1,7 @@
 
 %fid = '0964'
 %fid = '0980'
-fid = '1038'
+fid = '1034'
 fstruct = dir(['~/Documents/AdesnikLab/Data/' fid '*2015.dat'])
 load(['~/Documents/AdesnikLab/Data/' fstruct.name], '-mat')
 fstruct = dir(['~/Documents/AdesnikLab/Processed_HSV/*' fid '*.mat'])
