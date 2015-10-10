@@ -205,6 +205,9 @@ def get_spike_triggered_averages(df, wtmat, trials_ran_dict, trial_time, start_t
     amp_sta = list()
     angle_sta = list()
 
+    camTime = wtmat['camTime'][:]
+    num_frames = wtmat['numFrames'][:]
+
     camInds = np.logical_and(camTime >= start_time, camTime <= stop_time)
     camIndsControl = range(num_frames)
     velRunInds = np.logical_and(trial_time >= start_time, trial_time <= stop_time)
@@ -264,7 +267,7 @@ def get_spike_triggered_averages(df, wtmat, trials_ran_dict, trial_time, start_t
         amp_sta.append(unit_amp)
         angle_sta.append(unit_angle)
 
-    return set_point_sta, ampt_sta, angle_sta
+    return set_point_sta, amp_sta, angle_sta
 
 def mean_confidence_interval(data, confidence=0.95):
     '''
@@ -951,3 +954,127 @@ def angle_psd(ang_list, camTime, start=1.5, stop=2.5):
 #        plt.xlabel('amp (deg)')
 #
 #        plt.show()
+
+    fids = ['1034', '1044', '1054', '1058', '1062']
+    region = 'vS1'
+
+    sns.set_context("poster")
+    scorr_coefs = np.empty((0, 2))
+    test_pvals  = np.empty((0, 1))
+
+    for fid in fids:
+        usr_dir = os.path.expanduser('~')
+        sorted_spikes_dir_path = usr_dir + '/Documents/AdesnikLab/SortedSpikes/'
+        fid_region = 'fid' + fid + '_' + region
+        sort_file_paths = glob.glob(sorted_spikes_dir_path + fid_region + '*.mat')
+
+        data_dir_path = usr_dir + '/Documents/AdesnikLab/Data/'
+        data_dir_paths  = glob.glob(data_dir_path + fid + '*.dat')
+
+        # Calculate runspeed
+        run_mat = load_run_file(data_dir_paths[0]).value
+        vel_mat, trial_time = calculate_runspeed(run_mat)
+
+        # Get stimulus id list
+        stim = load_stimsequence(data_dir_paths[0])
+
+        # Create running trial dictionary
+        # Strict running thresholds
+        cond_ind_dict,trials_ran_dict = classify_run_trials(stim, vel_mat,
+                trial_time, stim_start=1.25, stim_stop=2.50, mean_thresh=400,
+                sigma_thresh=150, low_thresh=200, display=False)
+
+        df = make_df(sort_file_paths,data_dir_path,region=region)
+        vel_mat = vel_mat*(2*np.pi*6)/360.0
+
+        hsv_mat_path = glob.glob(usr_dir + '/Documents/AdesnikLab/Processed_HSV/FID' + fid + '-data*.mat')[0]
+        wtmat = h5py.File(hsv_mat_path)
+        camTime, set_point_list, amp_list, vel_list, ang_list = get_wt_run_vals(wtmat, trials_ran_dict,
+                cond_ind_dict, vel_mat, trial_time)
+        sp_sta, amp_sta, ang_sta = get_spike_triggered_averages(df, wtmat, trials_ran_dict,
+                trial_time, start_time=1.5, stop_time=2.5, control_pos=9)
+        set_point_cum, amp_cum, ang_cum, run_cum, total_trials = \
+                get_cummulative_distributions(wtmat, trials_ran_dict, trial_time,
+                        start_time=1.5, stop_time=2.5, control_pos=9)
+
+
+##### angle spike triggered averages  #####
+    pos = 9
+    binsize = 5
+    bin_start = 70
+    bin_stop  = 180
+    bins = np.arange(bin_start, bin_stop, binsize)
+
+    for unit in range(len(ang_sta)):
+        plt.figure()
+        for i,pos in enumerate(range(9)):
+            ang_sta_hist = np.histogram(ang_sta[unit][pos-1], bins)[0]
+            ang_cum_hist = np.histogram(ang_cum[pos-1], bins)[0]*0.002
+            ang_norm = ang_sta_hist/ang_cum_hist
+
+            ang_sta_hist_trim = np.histogram(ang_sta[unit][pos-1+9], bins)[0]
+            ang_cum_hist_trim = np.histogram(ang_cum[pos-1+9], bins)[0]*0.002
+            ang_norm_trim = ang_sta_hist_trim/ang_cum_hist_trim
+
+            plt.subplot(2,5,i+1)
+            plt.plot(bins[:-1], ang_norm, 'k', bins[:-1], ang_norm_trim, 'r')
+            plt.xlim(90, 165)
+
+        plt.show()
+
+#            sta_max = np.nanmax(np.append(ang_sta_hist, ang_sta_hist_trim))
+#            cum_max = np.nanmax(np.append(ang_cum_hist, ang_cum_hist_trim))
+#            nor_max = np.nanmax(np.append(ang_norm, ang_norm_trim))
+#
+#            plt.figure()
+#
+#            plt.subplot(3,2,1)
+#            plt.bar(bins[:-1], ang_sta_hist, binsize);plt.xlim(bin_start, bin_stop)
+#            plt.ylim(0, sta_max)
+#            plt.title('Pre-trim')
+#            plt.ylabel('spikes/bin')
+#            plt.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+#            plt.subplot(3,2,3)
+#            plt.bar(bins[:-1], ang_cum_hist, binsize);plt.xlim(bin_start, bin_stop)
+#            plt.ylim(0, cum_max)
+#            plt.ylabel('seconds/bin')
+#            plt.subplot(3,2,5)
+#            plt.bar(bins[:-1], ang_norm, binsize);plt.xlim(bin_start, bin_stop)
+#            plt.ylim(0, nor_max)
+#            plt.tick_params(axis='x', which='both', top='off')
+#            plt.ylabel('spike rate (Hz)')
+#            plt.xlabel('ang (deg)')
+#
+#            plt.subplot(3,2,2)
+#            plt.bar(bins[:-1], ang_sta_hist_trim, binsize);plt.xlim(bin_start, bin_stop)
+#            plt.ylim(0, sta_max)
+#            plt.title('Post-trim')
+#            plt.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+#            plt.subplot(3,2,4)
+#            plt.bar(bins[:-1], ang_cum_hist_trim, binsize);plt.xlim(bin_start, bin_stop)
+#            plt.ylim(0, cum_max)
+#            plt.subplot(3,2,6)
+#            plt.bar(bins[:-1], ang_norm_trim, binsize);plt.xlim(bin_start, bin_stop)
+#            plt.ylim(0, nor_max)
+#            plt.tick_params(axis='x', which='both', top='off')
+#            plt.xlabel('ang (deg)')
+#
+#            plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
