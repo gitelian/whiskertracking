@@ -1071,10 +1071,3 @@ def angle_psd(ang_list, camTime, start=1.5, stop=2.5):
 
 
 
-
-
-
-
-
-
-
