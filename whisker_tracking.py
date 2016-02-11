@@ -776,18 +776,6 @@ if __name__ == "__main__":
     plt.suptitle(fid + ' cumulative set-point and runspeed distributions')
     plt.show()
 
-##### test PSD confidence interval stuff  #####
-    params.Fs = 500;
-    params.tapers = [3 5];
-    params.fpass = [1:250];
-    params.err = [1 0.95];
-    params.trialave = 1;
-
-    test = ang_dict['1062']
-    pos = test[0].T
-
-
-
 
 
 ##### test PSD confidence interval stuff  #####
@@ -1063,7 +1051,13 @@ def angle_psd(ang_list, camTime, start=1.5, stop=2.5):
 
 
 
-
+def permutation_test(x,y):
+    rhos = list()
+    for i in range(y.shape[0]):
+        y_new = np.random.choice(y, y.shape[0])
+        d = y_new - x
+        rhos.append(sp.stats.pearsonr(x,d)[0])
+    return rhos
 
 
 

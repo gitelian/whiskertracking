@@ -45,7 +45,7 @@ timeStep  = 1/fps; % may need to add e-phys sampling rate?round(1/fps*sr)/sr
 
 camTime      = startTime:timeStep:(stopTime-timeStep);
 analStartInd = floor((analStart - startTime)/timeStep) +1; % +1 to deal with zero not working as a first frame index
-analStopInd  = floor((analStop - startTime)/timeStep) + 1;
+analStopInd  = floor((analStop - startTime)/timeStep);% + 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Specify video directory and select .dat file
@@ -86,10 +86,10 @@ vid_fname = vidStrct(1).name;
 whisker_density = zeros(size(img, 1), size(img, 2), num_stimuli);
 
 h = waitbar(0, 'Initializing waitbar ...');
-trial_counter = 0
+trial_counter = 0;
 num_good_trials = length(trialsran);
 
-for trial_type = 1:num_stimuli
+for trial_type = 6;%1:num_stimuli
 
     good_trial_indices = intersect(find(stimsequence == trial_type), trialsran);
 
@@ -105,7 +105,8 @@ for trial_type = 1:num_stimuli
         % used to binarize image and separate reflective whisker from
         % background and noise.
         temp = reshape(img, size(img,1)*size(img,2)*size(img,3), 1);
-        threshold = mean(temp) + 4*std(single(temp));
+        threshold = mean(temp) + 1.5*std(single(temp));
+        %threshold = 5;
         clear temp
 
         % Pre-allocate 'counts' matrix on first movie
@@ -116,10 +117,14 @@ for trial_type = 1:num_stimuli
 
         % Compute whisker counts for density calculation
         % Only during specified analysis period
-        for frind = analStartInd:analStopInd
+
+%         for frind = analStartInd:analStopInd
+        for frind = 1:737
             temp = img(:,:,frind);
             img_inds = temp > threshold;
-            counts(img_inds) = counts(img_inds) + 1;
+%             counts(img_inds) = counts(img_inds) + 1;
+            counts = counts + double(img(:,:,frind));
+
             frame_counter = frame_counter + 1;
         end
         % End Compute whisker counts for density calculation
