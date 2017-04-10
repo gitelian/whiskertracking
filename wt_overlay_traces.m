@@ -87,7 +87,7 @@ open(newvid);
 %%
 fig = figure('Position', [100, 100, v.Width*2, v.Height*2]);
 ColOrd = get(gca,'ColorOrder');ColOrd(2,2)=0.75;
-count = 1+(mov-1)*v.NumberOfFrames;
+count = 1; %+(mov-1)*v.NumberOfFrames;
 for k = 1:v.NumberOfFrames
     
     % Plot all whisker traces in a single color    
@@ -119,8 +119,8 @@ for k = 1:v.NumberOfFrames
 %     in = inpolygon(x,y,xv,yv);
     plot(x, y, 'co')
     
-    x1  = x0 - 100*cos((180 - ang(count))*pi/180);
-    y1  = y0  - 100*sin((180 - ang(count))*pi/180);
+    x1  = x0 - 100*cos((180 - ang{mov}(count))*pi/180);
+    y1  = y0  - 100*sin((180 - ang{mov}(count))*pi/180);
 %     if ang(count) < 0
 %         x1  = x0 + 100*cos((180 + ang(count))*pi/180);
 %         y1  = y0 + 100*sin((180 + ang(count))*pi/180);
