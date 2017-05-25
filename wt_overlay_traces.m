@@ -1,4 +1,4 @@
-
+0
 %% get paths to measure, trace, and avi directories
 
 mov = 1;
