@@ -1,3 +1,4 @@
+function trackwhiskers_beast(vidDir, whiskerMat, varargin)
 %%TRACKWHISKERS.M Tracks whiskers using Janelia farm tracker
 %   https://openwiki.janelia.org/wiki/display/MyersLab/Whisker+Tracking
 %   TRACKWHISKERS takes no arguments; it prompts the user to select a
@@ -13,47 +14,67 @@
 %
 %   TODO: enable processing of multiple selected directories
 
+% Default parameters that can be adjusted
+promptDir = 'F:\wtavi\';       % default directory when prompting user to select a file
+faceX = 'left';                % location of mouse's face
+saveDir = 'F:\tracking_data\'; % directory to save output to
 
-
-% Have user specify the video directory
-vidDir = uigetdir('F:\wtavi', 'Select the video directory to analyze');
-[~, dirName,~] = fileparts(vidDir);
-% dirCell = {'FID734'};
-% whiskerMat = [1];
-
-prompt   = {'Number of whiskers','Face position'};
-dlgTitle = 'Whisker Tracker Parameters';
-numLines = 1;
-%default  = {'-1','1650','680'};
-default  = {'-1','Face pos: top, bottom, left, right'}; % -1 means 'classify' will figure out the length threshold for classification
-usrInput = inputdlg(prompt,dlgTitle,numLines,default);
-
-if isempty(usrInput)
-    disp('process canceled')
-    return
+%% Parse input arguments
+index = 1;
+while index<=length(varargin)
+    try
+        switch varargin{index}
+            case {'dir','Dir'}
+                promptDir = varargin{index+1};
+                index = index + 2;
+            case {'face','Face'}
+                faceX = varargin{index+1};
+                index = index + 2;
+            case {'saveDir','SaveDir'}
+                saveDir = varargin{index+1};
+                index = index + 2;
+            otherwise
+                warning('Argument ''%s'' not recognized',varargin{index});
+                index = index + 1;
+        end
+    catch
+        warning('Argument %d not recognized',index);
+        index = index + 1;
+    end
 end
 
-whiskerMat = str2double(usrInput{1});
-faceX      = usrInput{2};
-%faceY      = usrInput{3};
+if ~exist('vidDir','var') || isempty(vidDir)
+    vidDir = uigetdir(promptDir,'Select directory to analyze');
+    if isnumeric(vidDir)
+        return
+    end
+end
+if ischar(vidDir)
+    vidDir = {vidDir};
+end
+numDir = numel(vidDir);
 
-mov_path = 'F:\wtavi\';
-mes_path = ['F:\tracking_data\' dirName filesep 'measure'];
-trc_path = ['F:\tracking_data\' dirName filesep 'trace'];
+if numel(whiskerMat)==1 && numDir>1
+    whiskerMat = repmat(whiskerMat,numDir,1);
+elseif numel(whiskerMat)~=numDir
+    error('# of elements in second input must equal 1 or number of directories input');
+end
 
+
+%% Trace whiskers
 fileMap  = [];
-for session = 1:1;%length(dirName)
-
-%     dirName = dirName{session};
-    num_whiskers = whiskerMat(session);
+for session = 1:numDir
     
-%      fstruct = dir([mov_path filesep dirName filesep '*.seq']);
-    fstruct = dir([mov_path filesep dirName filesep '*.avi']);
-    
-    if exist(mes_path,'dir') ~= 7
+    % Determine files and prepare folders for saving
+    dirName = flip(strtok(flip(vidDir{session}),'/')); % name of folder files exist in
+    fstruct = dir(fullfile(vidDir{session},'*.avi'));  % discover AVI files
+    fname = {fstruct(:).name};                         % pull out filenames
+    numFiles = numel(fname);
+    mes_path = fullfile(saveDir,dirName,'measure');    % determine measurements folder
+    if exist(mes_path,'dir') ~= 7                      
         mkdir(mes_path)
     end
-    
+    trc_path = fullfile(saveDir,dirName,'trace');      % determine trace folder
     if exist(trc_path,'dir') ~= 7
         mkdir(trc_path)
     end
@@ -61,34 +82,32 @@ for session = 1:1;%length(dirName)
     tic
     
     %% Parallel Process
-    hbar = parfor_progressbar(length(fstruct),'Tracing whiskers...');  %create the progress bar
-    parfor k = 1:length(fstruct)
+    hbar = parfor_progressbar(numFiles,'Tracing whiskers...');  % create the progress bar
+    parfor k = 1:length(fname)
+        system(['trace ' fullfile(vidDir,fname{k}) ' ' fullfile(trc_path,[fname{k},'.whiskers'])])
         hbar.iterate(1);   % update progress by one iteration
-        fname = fstruct(k).name;
-        system(['trace ' mov_path filesep dirName filesep fname ' ' trc_path filesep fname '.whiskers'])
     end
     close(hbar);
+
     %% Measure/Classify/Reclassify Trace Files
-    hbar = parfor_progressbar(length(fstruct),'Extracting measurements...');
+    hbar = parfor_progressbar(numFiles,'Extracting measurements...');
     fileCount   = 0;
     filesMissed = 0;
-    for k = 1:length(fstruct)
-        hbar.iterate(1);   % update progress by one iteration
-        fname = fstruct(k).name;
+    for k = 1:numFiles
+        msrName = fullfile(mes_path,[fname{k},'.measurements']);
+
+        status = system(['measure --face ' faceX ' ' fullfile(trc_path,[fname{k},'.whiskers']) ' '...
+            msrName]);
         
-        status = system(['measure --face ' faceX ' ' trc_path filesep fname '.whiskers' ' '...
-            mes_path filesep fname '.measurements']);
-        
-        status = system(['classify ' mes_path filesep fname '.measurements' ' '...mov
-            mes_path filesep fname '.measurements ' faceX ' ' '--px2mm 0.014 -n '...
-            num2str(num_whiskers)]); % mm/px = 0.0198
+        status = system(['classify ' msrName ' '...mov
+            msrName ' ' faceX ' ' '--px2mm 0.014 -n '...
+            num2str(whiskerMat{session})]); % mm/px = 0.0198
         
         %--limit0.01:500']); % mm/px = 0.0198
         
-        status = system(['reclassify ' mes_path filesep fname '.measurements' ' '...
-            mes_path filesep fname '.measurements' ' -n ' num2str(num_whiskers)]);
-%         
-        msrName = [mes_path filesep fname '.measurements'];
+        status = system(['reclassify ' msrName ' '...
+            msrName ' -n ' num2str(whiskerMat{session})]);
+
         
         disp(' ')
         disp(['File number: ' num2str(k)])
@@ -104,16 +123,15 @@ for session = 1:1;%length(dirName)
         disp(['Files missed: ' num2str(filesMissed)])
         disp(' ')
         
+        hbar.iterate(1);   % update progress by one iteration
     end
     close(hbar);
     
-    save(['F:\tracking_data/' dirName filesep 'fileMap.mat'],'fileMap','-v7.3')
+    save(fullfile(saveDir,dirName,'fileMap.mat'),'fileMap','-v7.3')
     
 end
 
-b = toc;
-
-disp(['total time ' num2str(b/(3600)) 'hours'])
+disp(['total time ' num2str(toc/(3600)) 'hours'])
 clear all
 
 
