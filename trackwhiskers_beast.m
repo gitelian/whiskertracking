@@ -60,6 +60,16 @@ elseif numel(whiskerMat)~=numDir
     error('# of elements in second input must equal 1 or number of directories input');
 end
 
+if numel(saveDir)==1 && numDir>1
+    saveDir = repmat(saveDir,numDir,1);
+elseif numel(saveDir)~=numDir
+    error('# of save directories must equal 1 or number of directories input');
+end
+for k = 1:numDir
+    if ~exist(saveDir{k},'dir')
+        saveDir{k} = vidDir{k};
+    end
+end
 
 %% Trace whiskers
 fileMap  = [];
@@ -82,15 +92,15 @@ for session = 1:numDir
     tic
     
     %% Parallel Process
-    hbar = parfor_progressbar(numFiles,'Tracing whiskers...');  % create the progress bar
+%     hbar = parfor_progressbar(numFiles,'Tracing whiskers...');  % create the progress bar
     parfor k = 1:length(fname)
-        system(['trace ' fullfile(vidDir,fname{k}) ' ' fullfile(trc_path,[fname{k},'.whiskers'])])
-        hbar.iterate(1);   % update progress by one iteration
+        system(['trace ' fullfile(vidDir{session},fname{k}) ' ' fullfile(trc_path,[fname{k},'.whiskers'])])
+%         hbar.iterate(1);   % update progress by one iteration
     end
     close(hbar);
 
     %% Measure/Classify/Reclassify Trace Files
-    hbar = parfor_progressbar(numFiles,'Extracting measurements...');
+%     hbar = parfor_progressbar(numFiles,'Extracting measurements...');
     fileCount   = 0;
     filesMissed = 0;
     for k = 1:numFiles
@@ -123,7 +133,7 @@ for session = 1:numDir
         disp(['Files missed: ' num2str(filesMissed)])
         disp(' ')
         
-        hbar.iterate(1);   % update progress by one iteration
+%         hbar.iterate(1);   % update progress by one iteration
     end
     close(hbar);
     
