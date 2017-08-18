@@ -1,4 +1,4 @@
-0
+
 %% get paths to measure, trace, and avi directories
 
 mov = 1;
@@ -44,13 +44,13 @@ fig = figure('Position', [100, 100, v.Width*2, v.Height*2]);
 ColOrd = get(gca,'ColorOrder');ColOrd(2,2)=0.75;
 
 newvid = VideoWriter([exp_dir filesep 'movies' filesep avi_dir(mov).name], 'Motion JPEG AVI');
-k=v.NumberOfFrames;
-vidFrame = read(v, k);
+k = v.NumberOfFrames;
+vidFrame = read(v, 1);
 image(vidFrame);
 currAxes.Visible = 'off';
 hold on
 % get indices for data corresponding to frame k
-data_inds = find(msr.fid == k-1);
+data_inds = find(msr.fid == 0);
 % plot all whisker traces
 for l = data_inds(1):data_inds(end)
     plot(trc.x{l}, trc.y{l}, 'b')
@@ -88,7 +88,8 @@ open(newvid);
 fig = figure('Position', [100, 100, v.Width*2, v.Height*2]);
 ColOrd = get(gca,'ColorOrder');ColOrd(2,2)=0.75;
 count = 1; %+(mov-1)*v.NumberOfFrames;
-for k = 1:v.NumberOfFrames
+num_frames = length(unique(msr.fid));
+for k = 1:num_frames %v.NumberOfFrames
     
     % Plot all whisker traces in a single color    
     % plot frame k
@@ -156,4 +157,5 @@ for k = 1:v.NumberOfFrames
 end
 
 close(newvid)
+close(fig)
 clear

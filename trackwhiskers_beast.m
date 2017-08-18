@@ -4,6 +4,7 @@
 %   directory contining .avi files of high speed videos.
 %
 %   G. Telian
+
 %   Adesnik Lab
 %   UC Berkeley
 %   20160815
@@ -41,11 +42,13 @@ mov_path = 'F:\wtavi\';
 mes_path = ['F:\tracking_data\' dirName filesep 'measure'];
 trc_path = ['F:\tracking_data\' dirName filesep 'trace'];
 
-fileMap  = [];
-for session = 1:1;%length(dirName)
+% fileMap  = [];
+for session = 1:1% length(dirName) (add ability to choose multiple directories!!!
 
+    fileMap  = [];
 %     dirName = dirName{session};
-    num_whiskers = whiskerMat(session);
+%     num_whiskers = whiskerMat(session);
+    num_whiskers = whiskerMat(1);
     
 %      fstruct = dir([mov_path filesep dirName filesep '*.seq']);
     fstruct = dir([mov_path filesep dirName filesep '*.avi']);
@@ -61,7 +64,7 @@ for session = 1:1;%length(dirName)
     tic
     
     %% Parallel Process
-    hbar = parfor_progressbar(length(fstruct),'Tracing whiskers...');  %create the progress bar
+    hbar = parfor_progressbar(length(fstruct),[dirName ' Tracing whiskers...']);  %create the progress bar
     parfor k = 1:length(fstruct)
         hbar.iterate(1);   % update progress by one iteration
         fname = fstruct(k).name;
@@ -69,7 +72,7 @@ for session = 1:1;%length(dirName)
     end
     close(hbar);
     %% Measure/Classify/Reclassify Trace Files
-    hbar = parfor_progressbar(length(fstruct),'Extracting measurements...');
+    hbar = parfor_progressbar(length(fstruct),[dirName ' Extracting measurements...']);
     fileCount   = 0;
     filesMissed = 0;
     for k = 1:length(fstruct)
