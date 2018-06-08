@@ -1,4 +1,4 @@
-%%WT_MULTI_WHISKER Tracks pad angle from full pad high speed imaging
+ %%WT_MULTI_WHISKER Tracks pad angle from full pad high speed imaging
 % run script to calculate smoothed angle, set-point, amplitude, phase, and
 % velocity of whisker pad. This script expects tracking_data and .avi files
 % for a given experiment.
@@ -7,7 +7,7 @@
 %
 % UPDATE 20170410: Each trial should have a single video. Data from each
 % trial will be processed independently and stored in a cell array specific
-% each measurement (e.g. angle, set-point, phase).
+% to each measurement (e.g. angle, set-point, phase).
 %
 % G. Telian
 
@@ -19,7 +19,7 @@
 
 %% get paths to measure, trace, and avi directories
 % prctle = 60;
-prctle = 20; % for one whisker
+prctle = 20; % for one whcisker
 
 exp_dir = uigetdir('F:\tracking_data', 'select experiment directory');
 [~, exp_name, ~] = fileparts(exp_dir);
@@ -131,9 +131,21 @@ for f_ind = 1:length(msr_dir)
     if num_frames == num_vid_frames && f_ind == 1
         disp('Tracked frames MATCH video frames')
         sg_max = 1001;
-    elseif f_ind == 1
+    elseif num_frames ~= num_vid_frames && f_ind == 1
         disp('Tracked frames DO NOT MATCH video frames using TRACKED FRAMES!!!')        
-        sg_max = num_frames;
+        
+        if mod(num_frames, 2) == 0
+            sg_max = num_frames - 1;
+        else
+            sg_max = num_frames;
+        end
+    elseif num_frames ~= num_vid_frames && f_ind ~= 1
+        
+        if mod(num_frames, 2) == 0
+            sg_max = num_frames - 1;
+        else
+            sg_max = num_frames;
+        end
     end
     
     ang_temp = zeros(num_frames, 1);

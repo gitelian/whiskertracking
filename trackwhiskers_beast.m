@@ -12,38 +12,44 @@
 %   20162024 EDIT: added parfor_progressbar. cleaned up unnecessary
 %   commented out code
 %
-%   TODO: enable processing of multiple selected directories
+%   20180608 EDIT: added ability to process multiple directories
 
 
 
 % Have user specify the video directory
-vidDir = uigetdir('F:\wtavi', 'Select the video directory to analyze');
-[~, dirName,~] = fileparts(vidDir);
+% vidDir = uigetdir('F:\wtavi', 'Select the video directory to analyze');
+vidDir = uigetdir2('F:\wtavi', 'Select the video directory to analyze');
+% [~, dirName,~] = fileparts(vidDir);
 % dirCell = {'FID734'};
 % whiskerMat = [1];
 
-prompt   = {'Number of whiskers','Face position'};
-dlgTitle = 'Whisker Tracker Parameters';
-numLines = 1;
-%default  = {'-1','1650','680'};
-default  = {'-1','Face pos: top, bottom, left, right'}; % -1 means 'classify' will figure out the length threshold for classification
-usrInput = inputdlg(prompt,dlgTitle,numLines,default);
+% user input
+% prompt   = {'Number of whiskers','Face position'};
+% dlgTitle = 'Whisker Tracker Parameters';
+% numLines = 1;
+% %default  = {'-1','1650','680'};
+% default  = {'-1','Face pos: top, bottom, left, right'}; % -1 means 'classify' will figure out the length threshold for classification
+% usrInput = inputdlg(prompt,dlgTitle,numLines,default);
+% 
+% if isempty(usrInput)
+%     disp('process canceled')
+%     return
+% end
+% 
+% whiskerMat = str2double(usrInput{1});
+% faceX      = usrInput{2};
 
-if isempty(usrInput)
-    disp('process canceled')
-    return
-end
-
-whiskerMat = str2double(usrInput{1});
-faceX      = usrInput{2};
+% default parameters (no user input)
+whiskerMat = -1; % all whiskers
+faceX      = 'bottom'; % face position
 %faceY      = usrInput{3};
 
-mov_path = 'F:\wtavi\';
-mes_path = ['F:\tracking_data\' dirName filesep 'measure'];
-trc_path = ['F:\tracking_data\' dirName filesep 'trace'];
-
 % fileMap  = [];
-for session = 1:1% length(dirName) (add ability to choose multiple directories!!!
+for session = 1:length(vidDir)
+    [~, dirName,~] = fileparts(vidDir{session});
+    mov_path = 'F:\wtavi\';
+    mes_path = ['F:\tracking_data\' dirName filesep 'measure'];
+    trc_path = ['F:\tracking_data\' dirName filesep 'trace'];
 
     fileMap  = [];
 %     dirName = dirName{session};
