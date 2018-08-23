@@ -1,4 +1,3 @@
- %%WT_MULTI_WHISKER Tracks pad angle from full pad high speed imaging
 % run script to calculate smoothed angle, set-point, amplitude, phase, and
 % velocity of whisker pad. This script expects tracking_data and .avi files
 % for a given experiment.
@@ -19,7 +18,17 @@
 
 %% get paths to measure, trace, and avi directories
 % prctle = 60;
-prctle = 20; % for one whcisker
+% prctle = 20; % for one whcisker
+
+% user input
+prompt   = {'percentile', 'LED present'};
+dlgTitle = 'wt_multi user settings';
+numLines = 1;
+default  = {'20', '0'}; % -1 means 'classify' will figure out the length threshold for classification
+usrInput = inputdlg(prompt,dlgTitle,numLines,default);
+
+prctle = str2double(usrInput{1});
+LED    = str2double(usrInput{2});
 
 exp_dir = uigetdir('F:\tracking_data', 'select experiment directory');
 [~, exp_name, ~] = fileparts(exp_dir);
@@ -107,6 +116,14 @@ clear v trc msr
 % x0 = 1375;
 % y0 = 550;
 
+% select roi for signal LED
+if LED
+    f = figure;
+    imshow(vidFrame);
+    title('place ROI around LED (make it large in case LED moved!)')
+    BW = roipoly;
+    close(f);
+end
 
 %% measure angle and calculate smooth angle trace
 disp('smoothing angle trace')
@@ -118,6 +135,11 @@ sp = cell(length(msr_dir), 1);
 amp = cell(length(msr_dir), 1);
 vel = cell(length(msr_dir), 1);
 cur = cell(length(msr_dir), 1);
+
+if LED
+    % LED pulses
+    pulse_sequence = zeros(length(msr_dir), 3);
+end
 
 progressbar('files', 'frames')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
 % good_inds = 1:length(msr_dir);
@@ -173,13 +195,55 @@ for f_ind = 1:length(msr_dir)
         % calculate mean curvature of good whiskers
         curve_temp(k,1) = mean(msr.curvature(data_inds(ind(nose_index))));
     end
+    
+    %% count number of pulses from LED
+    if LED
+        v = VideoReader(['F:\wtavi' filesep exp_name filesep avi_dir(f_ind).name]);
+        img = read(v, [1, 300]); % search first 600msec of video for light pulses
+        light_signal = zeros(size(img, 4), 1);
+        for frame_k = 1:size(img, 4)
+            if frame_k == 1
+                first_frame = img(:,:,1,1);
+            end
+            a = img(:, :, 1, frame_k) - first_frame;
+            a_roi = a(BW);
+            light_signal(frame_k) = length(find(a_roi > 75));
+        end
+        
+%         f=figure
+%         plot(light_signal)
+%         pause(2)
+%         close(f)
+        
+        threshold = mean(light_signal) + 1*std(light_signal);
+        rising_edge  = find(diff(light_signal > threshold) > 0);
+        falling_edge = find(diff(light_signal > threshold) < 0);
+        
+        if length(rising_edge) == length(falling_edge)
+            num_pulses = length(rising_edge);
+            
+            % count pulses
+            time_between_rising_edges = diff(rising_edge);
+            temp = find(time_between_rising_edges > 8) + 1;
+            pulse_train_start_inds = [1; temp];
+            
+            pulse_sequence_temp = [diff(pulse_train_start_inds); (num_pulses - pulse_train_start_inds(end) + 1)];
+            if length(pulse_sequence_temp) == 3
+                pulse_sequence(f_ind, :) = pulse_sequence_temp;
+            end
+        else
+            % return value indicating an error
+            pulse_sequence(f_ind, :) = nan(1, 3);
+        end
+    end
+    %%
     angle_notsmooth{f_ind} = ang_temp;
     ang{f_ind} = sgolayfilt(ang_temp, 4, 17); % 21frames:23.8Hz , 17frames:29.4Hz% Interpolate angle trace
     
     ang_interp = naninterp(ang{f_ind}, 'pchip');
     
     % smooth curvature trace
-    cur = sgolayfilt(curve_temp, 4, 17);
+    cur{f_ind} = sgolayfilt(curve_temp, 4, 17);
     
     % whisking
     wsk{f_ind} = sgolayfilt(ang_temp, 4, sg_max);
@@ -201,8 +265,16 @@ end
 progressbar(1)
 
 % save
-save([exp_dir filesep fname '-wt.mat'],...
-    'angle_notsmooth', 'ang', 'phs', 'sp', 'amp', 'vel', 'wsk', 'cur',...
-    'face', '-v7.3')
+if LED
+    save([exp_dir filesep fname '-wt.mat'],...
+        'angle_notsmooth', 'ang', 'phs', 'sp', 'amp', 'vel', 'wsk', 'cur',...
+        'face', 'pulse_sequence', '-v7.3')
+else
+    save([exp_dir filesep fname '-wt.mat'],...
+        'angle_notsmooth', 'ang', 'phs', 'sp', 'amp', 'vel', 'wsk', 'cur',...
+        'face', '-v7.3')
+end
+
 disp(['completed processing: ' exp_name])
+
 clear
