@@ -67,6 +67,7 @@ for session = 1:length(vidDir)
         mkdir(trc_path)
     end
     
+%     a = tic;
     tic
     
     %% Parallel Process
