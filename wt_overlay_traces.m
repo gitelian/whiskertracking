@@ -118,7 +118,7 @@ for k = 1:num_frames %v.NumberOfFrames
     x = msr.follicle_x(data_inds(ind));
     y = msr.follicle_y(data_inds(ind));
 %     in = inpolygon(x,y,xv,yv);
-    plot(x, y, 'co')
+    plot(x, y, 'co');
     
     x1  = x0 - 100*cos((180 - ang{mov}(count))*pi/180);
     y1  = y0  - 100*sin((180 - ang{mov}(count))*pi/180);
