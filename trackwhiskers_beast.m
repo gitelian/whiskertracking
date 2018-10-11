@@ -117,7 +117,7 @@ for session = 1:length(vidDir)
     end
     close(hbar);
     
-    save(['F:\tracking_data/' dirName filesep 'fileMap.mat'],'fileMap','-v7.3')
+    save(['F:\tracking_data\' dirName filesep 'fileMap.mat'],'fileMap','-v7.3')
     
 end
 
