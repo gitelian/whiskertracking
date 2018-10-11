@@ -26,7 +26,7 @@
 prompt   = {'percentile', 'LED present', 'n_frames2avg'};
 dlgTitle = 'wt_multi user settings';
 numLines = 1;
-default  = {'20', '0', '1500'}; % -1 means 'classify' will figure out the length threshold for classification
+default  = {'20', '0', '500'}; % -1 means 'classify' will figure out the length threshold for classification
 usrInput = inputdlg(prompt,dlgTitle,numLines,default);
 
 prctle = str2double(usrInput{1});
@@ -271,7 +271,7 @@ for f_ind = 1:length(msr_dir)
             end
             a = img(:, :, 1, frame_k) - first_frame;
             a_roi = a(BW);
-            light_signal(frame_k) = length(find(a_roi > 75));
+            light_signal(frame_k) = length(find(a_roi > 25));
         end
         
         % figure
@@ -290,8 +290,8 @@ for f_ind = 1:length(msr_dir)
             pulse_train_start_inds = [1; temp];
             
             pulse_sequence_temp = [diff(pulse_train_start_inds); (num_pulses - pulse_train_start_inds(end) + 1)];
-            if length(pulse_sequence_temp) == 3
-                pulse_sequence(f_ind, :) = pulse_sequence_temp;
+            if length(pulse_sequence_temp) >= 3
+                pulse_sequence(f_ind, :) = pulse_sequence_temp(1:3);
             end
         else
             % return value indicating an error
