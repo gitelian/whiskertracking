@@ -199,7 +199,7 @@ for f_ind = 1:length(msr_dir)
     %% count number of pulses from LED
     if LED
         v = VideoReader(['F:\wtavi' filesep exp_name filesep avi_dir(f_ind).name]);
-        img = read(v, [1, 300]); % search first 600msec of video for light pulses
+        img = read(v, [1, 300]); %num_frames % 300 default % search first 600msec of video for light pulses
         light_signal = zeros(size(img, 4), 1);
         for frame_k = 1:size(img, 4)
             if frame_k == 1
@@ -207,7 +207,7 @@ for f_ind = 1:length(msr_dir)
             end
             a = img(:, :, 1, frame_k) - first_frame;
             a_roi = a(BW);
-            light_signal(frame_k) = length(find(a_roi > 75));
+            light_signal(frame_k) = length(find(a_roi > 25));
         end
         
 %         f=figure
@@ -228,8 +228,8 @@ for f_ind = 1:length(msr_dir)
             pulse_train_start_inds = [1; temp];
             
             pulse_sequence_temp = [diff(pulse_train_start_inds); (num_pulses - pulse_train_start_inds(end) + 1)];
-            if length(pulse_sequence_temp) == 3
-                pulse_sequence(f_ind, :) = pulse_sequence_temp;
+            if length(pulse_sequence_temp) >= 3
+                pulse_sequence(f_ind, :) = pulse_sequence_temp(1:3);
             end
         else
             % return value indicating an error
