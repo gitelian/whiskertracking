@@ -3,10 +3,12 @@
 import os
 import glob
 import pandas as pd
+from moviepy.editor import VideoFileClip
 
 
 main_dir = '/home/greg/GT015_LT_hsv/'
 OVERWRITE = True
+NUM_RAND_FRAMES = 2 # number of frames the user will use to mark the follicle base
 
 # REMEMBER glob.glob returns a LIST of path strings. You must
 # index into the appropriate one for whatever experiment you want to analyze
@@ -19,7 +21,7 @@ num_exps = len(exp_list)
 # the user mark the whisker follical for each tracked whisker. Indicate which
 # whisker the user must be marking!
 
-for exp_n in exp_list:
+for k, exp_n in enumerate(exp_list):
     # sort videos and get first video name
     avi_list = sort(glob.glob(exp_n + os.sep + '*.avi'))
     first_file = os.path.splitext(os.path.basename(avi_list[0]))
@@ -31,23 +33,41 @@ for exp_n in exp_list:
     # open h5 file with pandas
     df = pd.read_hdf(first_h5_file[0])
 
-    ## get list of unique bodyparts/things labeled. Points on the same whisker will
-    #  have their angle computed from the same follicle
+    # get rid of scorer level!
+    df.columns = df.columns.droplevel()
+    row = df.loc[0, :]
+    bodyparts = [str(x) for x in row.unstack(level=0).keys().tolist()]
 
-    # returns an array of size (n,) where n is the number of measurements such
-    # as the x, y coordinates as well as the likelihood of the tracked point
-    # being present in the frame. Each entry in the list is a type of size 3.
+    # get unique whisker_base keys
+    whisker_base_keys = sort([x for x in bodyparts if "base" in x])
+    num_whiskers = len(whisker_base_keys)
+    num_frames = df.shape[0]
 
-    column_values = df.columns.values
-    entry_list = [list() for x in range(len(column_values[0]))]
+    # preallocate array to contain the follicle coordinates
+    follicle_coords = np.zeros((num_whiskers, 2, NUM_RAND_FRAMES))
+    rand_frame_indices = np.random.randint(low=0, high=num_frames, size=NUM_RAND_FRAMES)
 
-    for k, entry in enumerate(column_values):
-        entry_list[0].append(column_values[k][0])
-        entry_list[1].append(column_values[k][1])
-        entry_list[2].append(column_values[k][2])
+    # open movie file
+    mov = VideoFileClip(avi_list[k])
 
-    scorer = [str(x) for x in np.unique(entry_list[0])[:]]
-    bodyparts = [str(x) for x in np.unique(entry_list[1])[:]]
-    measurement_type = [str(x) for x in np.unique(entry_list[2])[:]]
+    for frame_count, frame_index in enumerate(rand_frame_indices):
 
+        row = df.loc[frame_index, :]
+
+        # show frame and have user click on follicle positions
+        plt.figure()
+        plt.imshow(mov.get_frame(frame_index / mov.fps))
+        for whisker in whisker_base_keys:
+            plt.plot(row[whisker]['x'], row[whisker]['y'], '-o')
+        # plot tracked points
+        plt.title('Click on {} then middle click to submit points'.format(whisker_base_keys))
+        coords = plt.ginput(-1, show_clicks=True)
+        plt.close()
+        follicle_coords[:, :, frame_count] = np.asarray(coords) # populates columnwise therefore must transpose first
+
+    follicle_pos = np.mean(follicle_coords, axis=2)
+
+
+
+    df['object_center']['x']
 
