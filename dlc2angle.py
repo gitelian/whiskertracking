@@ -10,7 +10,6 @@ from moviepy.editor import VideoFileClip
 
 main_dir = '/home/greg/GT015_LT_hsv/'
 OVERWRITE = True
-#NUM_RAND_FRAMES = 5 # number of frames the user will use to mark the follicle base
 
 # REMEMBER glob.glob returns a LIST of path strings. You must
 # index into the appropriate one for whatever experiment you want to analyze
@@ -26,9 +25,6 @@ follicle_arrays = list()
 
 for k, exp_n in enumerate(exp_list):
 
-#    SELECT_POINTS = 1
-
-#    while SELECT_POINTS:
     # sort videos and get first video name
     avi_list = np.sort(glob.glob(exp_n + os.sep + '*.avi'))
     first_file = os.path.splitext(os.path.basename(avi_list[0]))
@@ -70,45 +66,6 @@ for k, exp_n in enumerate(exp_list):
     coords = plt.ginput(-1, show_clicks=True)
 
     follicle_arrays.append(np.asarray(coords))
-
-        ## select random frames, user chooses follicle positions, all follicle
-        #  positions are averaged and presented back to user, user chooses
-        #  whether to redo the selection process.
-
-#        # preallocate array to contain the follicle coordinates
-#        follicle_coords = np.zeros((num_whiskers, 2, NUM_RAND_FRAMES))
-#        rand_frame_indices = np.random.randint(low=0, high=num_frames, size=NUM_RAND_FRAMES)
-#
-#
-#        for frame_count, frame_index in enumerate(rand_frame_indices):
-#
-#            row = df.loc[frame_index, :]
-#
-#            # show frame and have user click on follicle positions
-#            plt.figure()
-#            plt.imshow(mov.get_frame(frame_index / mov.fps))
-#            for whisker in whisker_base_keys:
-#                plt.plot(row[whisker]['x'], row[whisker]['y'], '-o')
-#            # plot tracked points
-#            plt.title('{}\nClick on {} then middle click to submit points'.format(first_file[0], whisker_base_keys))
-#            coords = plt.ginput(-1, show_clicks=True)
-#            plt.close()
-#            follicle_coords[:, :, frame_count] = np.asarray(coords)[0:num_whiskers, :] # populates columnwise therefore must transpose first
-#
-#        follicle_pos = np.mean(follicle_coords, axis=2)
-#
-#        plt.figure()
-#        plt.imshow(mov.get_frame(0))
-#        for follicle_ind in range(num_whiskers):
-#            plt.plot(follicle_coords[follicle_ind, 0, :], follicle_coords[follicle_ind, 1, :], '.', markersize=5)
-#            plt.plot(follicle_pos[follicle_ind, 0], follicle_pos[follicle_ind, 1], '-ro', markerfacecolor="none")
-#        plt.title('Click anywhere to close figure')
-#        plt.ginput(1)
-#        plt.close()
-#
-#        SELECT_POINTS = input("Re-select points? 0/1: ")
-
-
 
     del df, mov
 
