@@ -49,17 +49,6 @@ for k, exp_n in enumerate(exp_list):
     # open movie file
     mov = VideoFileClip(avi_list[k])
 
-    ## compute the difference between all frames, average it, and display the image
-#    all_frames = np.zeros((mov.size[1], mov.size[0], num_frames))
-#    for frame_index in range(num_frames):
-#        all_frames [:, :, frame_index] = np.mean(mov.get_frame(frame_index), axis=2)
-#
-#    diff_frames = np.diff(all_frames, axis=2)
-#    mean_diff = np.mean(diff_frames, axis=2)
-#
-#    plt.figure()
-#    plt.imshow(mean_diff, cmap='gray')
-
     ## plot all whisker base points and have user select follicle positions
     all_coords = np.zeros((num_frames, 2, num_whiskers))
     for frame_index in range(num_frames):
