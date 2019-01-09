@@ -59,15 +59,20 @@ for k, exp_n in enumerate(exp_list):
             all_coords[frame_index, :, whisker_ind] = np.asarray([row[whisker]['x'], row[whisker]['y']])
 
     plt.imshow(mov.get_frame(0))
-    for follicle_ind in range(num_whiskers):
+    row = df.loc[0, :]
+    for follicle_ind, whisker in enumerate(whisker_base_keys):
         plt.plot(all_coords[:, 0, follicle_ind], all_coords[:, 1, follicle_ind], '.', markersize=5)
+        plt.plot(row[whisker]['x'], row[whisker]['y'], '-ro', markerfacecolor='none')
 
     plt.title('{}\nClick on {} then middle click to submit points'.format(first_file[0], whisker_base_keys))
     coords = plt.ginput(-1, show_clicks=True)
+    plt.close()
 
     follicle_arrays.append(np.asarray(coords))
 
     del df, mov
+
+print('COMPUTING ANGLE FOR ALL EXPERIMENTS')
 
 
 
