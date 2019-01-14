@@ -8,6 +8,7 @@ import pandas as pd
 from moviepy.editor import VideoFileClip
 import multiprocessing as mp
 import time
+import scipy.io as sio
 
 
 main_dir = '/home/greg/GT015_LT_hsv/'
@@ -146,6 +147,7 @@ for k, exp_n in enumerate(exp_list):
     # get rid of scorer level!
     df.columns = df.columns.droplevel()
     row = df.loc[0, :]
+    FID_name = os.path.basename(exp_n)
     bodyparts = [str(x) for x in row.unstack(level=0).keys().tolist()]
 
     # get unique whisker_base keys
@@ -186,51 +188,8 @@ for k, exp_n in enumerate(exp_list):
     pool.close()
     print('total time: ' + str(elapsed))
 
-
-
-
-
-
-
-    # convert to pandas data frame and then convert to CSV for reading in to
-    # MATLAB
-#    df = pd.DataFrame(angles, columns=whisker_base_keys)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    data_dict = {'angles':angles, 'object_pos':object_pos}
+    sio.savemat(main_dir + FID_name + '_raw.mat', data_dict)
 
 
 
